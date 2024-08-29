@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id          Int       @id @default(autoincrement())
+  profileImg  String?
+  email       String    @unique
+  phone       String
+  username    String    @unique
+  password    String
+  createdAt   DateTime  @default(now())
+  createdBy   Int
+  modifiedAt  DateTime  @updatedAt
+  modifiedBy  Int
+  isDeleted   Boolean   @default(false)
+
+  UserRole     UserRole    
+  UserRestaurant   UserRestaurant[]
+  Subscription Subscription[]
+}
+
+model UserRestaurant {
+  id           Int @id @default(autoincrement())
+  userId       Int
+  restaurantId Int
+  user        User        @relation(fields: [userId], references: [id])
+  restaurant  Restaurant  @relation(fields: [restaurantId], references: [id])
+}
+
+model Address {
+  id      Int    @id @default(autoincrement())
+  street  String
+  state   String
+  city    String
+  country String
+  pinCode Int
+  Restaurant Restaurant[]
+}
+
+model Restaurant {
+  id          Int       @id @default(autoincrement())
+  name        String
+  addressId   Int
+  createdAt   DateTime  @default(now())
+  createdBy   Int
+  modifiedAt  DateTime  @updatedAt
+  modifiedBy  Int
+  isDeleted   Boolean   @default(false)
+  address     Address  @relation(fields: [addressId], references: [id])
+  menuItems   MenuItem[]
+  orders      Order[]
+  UserRestaurant UserRestaurant[]
+}
+
+model MenuItem {
+  id            Int       @id @default(autoincrement())
+  foodImageLink String?
+  restaurantId  Int
+  name          String
+  description   String?
+  price         Float
+  mealCategory  String?
+  isAvailable   Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  createdBy     Int
+  modifiedAt    DateTime  @updatedAt
+  modifiedBy    Int
+  isDeleted     Boolean   @default(false)
+  restaurant  Restaurant   @relation(fields: [restaurantId], references: [id])
+  menuItemFoodCategory MenuItemFoodCategory[]
+  orderItems  OrderItem[]
+}
+
+model FoodCategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  createdAt   DateTime  @default(now())
+  createdBy   Int
+  modifiedAt  DateTime  @updatedAt
+  modifiedBy  Int
+  isDeleted   Boolean   @default(false)
+  menuItemFoodCategory MenuItemFoodCategory[]
+}
+
+model MenuItemFoodCategory {
+  id            Int  @id @default(autoincrement())
+  menuItemId    Int
+  foodCategoryId Int
+  menuItem    MenuItem    @relation(fields: [menuItemId], references: [id])
+  foodCategory FoodCategory @relation(fields: [foodCategoryId], references: [id])
+}
+
+model Order {
+  id           Int       @id @default(autoincrement())
+  userId       Int?
+  restaurantId Int
+  status       FoodOrderStatus
+  createdAt    DateTime  @default(now())
+  createdBy    Int
+  modifiedAt   DateTime  @updatedAt
+  modifiedBy   Int
+  isDeleted    Boolean   @default(false)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  orderItems   OrderItem[]
+  orderPayments OrderPayment?
+}
+
+model OrderItem {
+  id         Int   @id @default(autoincrement())
+  orderId    Int
+  menuItemId Int
+  quantity   Int
+  price      Float
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model OrderPayment {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @unique
+  paymentStatus   OnRampStatus
+  paymentAmount   Float
+  paymentDate     DateTime  @default(now())
+  transactionId   Int
+  amountWithoutTax Float
+  totalTaxAmount  Float
+  createdAt       DateTime  @default(now())
+  createdBy       Int
+  modifiedAt      DateTime  @updatedAt
+  modifiedBy      Int
+  isDeleted       Boolean   @default(false)
+  order           Order    @relation(fields: [orderId], references: [id])
+}
+
+model Customer {
+  id Int  @id @default(autoincrement())
+  Phone String
+  name String
+
+}
+
+model Subscription {
+  id              Int            @id @default(autoincrement())
+  userId          Int
+  subscriptionType SubscriptionType
+  startDate       DateTime       @default(now())
+  endDate         DateTime
+  amount          Float
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  createdBy       Int
+  modifiedAt      DateTime       @updatedAt
+  modifiedBy      Int
+  user            User           @relation(fields: [userId], references: [id])
+}
+
+enum SubscriptionType {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum UserRole {
+  SUPERADMIN
+  RESTAURANTADMIN
+  CUSTOMER
+}
+
+enum FoodOrderStatus {
+  PENDING 
+  ACCEPTED
+  IN_PROGRESS
+  READY_TO_PICKUP
+  COMPLETED
+  CANCELED
+
+}
+
+enum OnRampStatus {
+  SUCCESS
+  FAILURE
+  PROCESSING
+}
