@@ -21,11 +21,14 @@ app.use(express.urlencoded({ extended: true }));
 Routes
 */
 
+import authRoute from './routes/AuthRoute'
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
+app.use('/api/v1/auth', authRoute);
 
 
 export {app}

@@ -21,12 +21,12 @@ model User {
   phone       String
   username    String    @unique
   password    String
+  isVerified  Boolean  @default(false)
   createdAt   DateTime  @default(now())
-  createdBy   Int
+  createdBy   String
   modifiedAt  DateTime  @updatedAt
-  modifiedBy  Int
+  modifiedBy  String
   isDeleted   Boolean   @default(false)
-
   UserRole     UserRole    
   UserRestaurant   UserRestaurant[]
   Subscription Subscription[]
@@ -55,9 +55,9 @@ model Restaurant {
   name        String
   addressId   Int
   createdAt   DateTime  @default(now())
-  createdBy   Int
+  createdBy   String
   modifiedAt  DateTime  @updatedAt
-  modifiedBy  Int
+  modifiedBy  String
   isDeleted   Boolean   @default(false)
   address     Address  @relation(fields: [addressId], references: [id])
   menuItems   MenuItem[]
@@ -75,9 +75,9 @@ model MenuItem {
   mealCategory  String?
   isAvailable   Boolean   @default(true)
   createdAt     DateTime  @default(now())
-  createdBy     Int
+  createdBy     String
   modifiedAt    DateTime  @updatedAt
-  modifiedBy    Int
+  modifiedBy    String
   isDeleted     Boolean   @default(false)
   restaurant  Restaurant   @relation(fields: [restaurantId], references: [id])
   menuItemFoodCategory MenuItemFoodCategory[]
@@ -89,9 +89,9 @@ model FoodCategory {
   name        String
   description String
   createdAt   DateTime  @default(now())
-  createdBy   Int
+  createdBy   String
   modifiedAt  DateTime  @updatedAt
-  modifiedBy  Int
+  modifiedBy  String
   isDeleted   Boolean   @default(false)
   menuItemFoodCategory MenuItemFoodCategory[]
 }
@@ -110,9 +110,9 @@ model Order {
   restaurantId Int
   status       FoodOrderStatus
   createdAt    DateTime  @default(now())
-  createdBy    Int
+  createdBy    String
   modifiedAt   DateTime  @updatedAt
-  modifiedBy   Int
+  modifiedBy   String
   isDeleted    Boolean   @default(false)
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   orderItems   OrderItem[]
@@ -139,9 +139,9 @@ model OrderPayment {
   amountWithoutTax Float
   totalTaxAmount  Float
   createdAt       DateTime  @default(now())
-  createdBy       Int
+  createdBy       String
   modifiedAt      DateTime  @updatedAt
-  modifiedBy      Int
+  modifiedBy      String
   isDeleted       Boolean   @default(false)
   order           Order    @relation(fields: [orderId], references: [id])
 }
@@ -162,9 +162,9 @@ model Subscription {
   amount          Float
   isActive        Boolean        @default(true)
   createdAt       DateTime       @default(now())
-  createdBy       Int
+  createdBy       String
   modifiedAt      DateTime       @updatedAt
-  modifiedBy      Int
+  modifiedBy      String
   user            User           @relation(fields: [userId], references: [id])
 }
 
