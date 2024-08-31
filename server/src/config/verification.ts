@@ -7,7 +7,6 @@ config({
 });
 
 
-
 export const generateAndSendEmailOtp = async (email: string) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     

@@ -3,13 +3,17 @@ import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
 import { PrismaClient } from '@prisma/client'
 import { generateAndSendEmailOtp, validateEmailOtp } from "../config/verification";
-import { RegisterUser } from "../lib/AuthValidation";
+import { RegisterUser, LoginUser } from "../lib/AuthValidation";
 import { uploadOnCloudinary } from "../utils/cloudnary";
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 
 const prisma = new PrismaClient()
 
+const generateJwtToken = (id: string) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '10d' });
+};
 
 export const RegisterRestaurantAdmin = AsyncHandler(async (req, res) => {
 
@@ -62,13 +66,14 @@ export const RegisterRestaurantAdmin = AsyncHandler(async (req, res) => {
 
     }
 
-})
+});
+
 
 
 export const VerifyRestaurantAdminOtp = AsyncHandler(async (req, res) => {
     const { email, otp } = req.body
     try {
-        if (!otp ||  !email) {
+        if (!otp || !email) {
             throw new ApiError(400, "Enter Valid Inputs");
         }
         const isVerified = await validateEmailOtp(email, otp)
@@ -92,4 +97,53 @@ export const VerifyRestaurantAdminOtp = AsyncHandler(async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Internal server error"));
 
     }
+});
+
+
+
+export const LoginRestaurantAdmin = AsyncHandler(async (req, res) => {
+    const { email, password } = LoginUser.parse(req.body);
+    try {
+        if (!email || !password) {
+            throw new ApiError(400, "Enter Valid Inputs");
+        }
+        const user = await prisma.user.findUnique({
+            where: {
+                email: email
+            }
+        })
+        if (!user) {
+            throw new ApiError(400, "Invalid Credentials");
+        }
+        const isPasswordValid = await bcrypt.compare(password, user.password)
+        if (!isPasswordValid) {
+            throw new ApiError(400, "Invalid Credentials");
+        }
+        const token = generateJwtToken(user.id.toString());
+
+        // remove password from user object before sending to user
+        const { password: pass, ...userDetail } = user
+
+        res
+        .cookie('Authorization', token, 
+            { httpOnly: true, secure: true, sameSite: 'none' }
+        )
+        .json(new ApiResponse(200, userDetail, "Login successful"))
+
+
+    } catch (error) {
+        console.error('Error logging in:', error);
+        return res.status(500).json(new ApiResponse(500, "Internal server error"));
+
+    }
+});
+
+
+
+export const OAuthLogin = AsyncHandler(async (req, res) => {
+    const password = Math.floor(100000 + Math.random() * 900000);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password.toString(), salt);
+
 })
+
