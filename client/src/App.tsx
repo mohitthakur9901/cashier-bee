@@ -1,9 +1,10 @@
-import AppBar from "./components/AppBar"
+
+import Hero from "./components/Hero"
 function App() {
 
   return (
     <>
-   <AppBar/> 
+    <Hero/>
     </>
   )
 }

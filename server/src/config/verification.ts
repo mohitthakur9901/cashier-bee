@@ -1,15 +1,19 @@
 import { createTransport } from 'nodemailer';
-import { redisClient } from './redis';
+import bcrypt from 'bcrypt';
 import { config } from 'dotenv';
+import { PrismaClient } from '@prisma/client';
 
 config({
-    path: '../.env' 
+    path: '../.env'
 });
+
+
+const prisma = new PrismaClient()
 
 
 export const generateAndSendEmailOtp = async (email: string) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
-    
+
     try {
         const transporter = createTransport({
             service: 'gmail',
@@ -25,31 +29,51 @@ export const generateAndSendEmailOtp = async (email: string) => {
             subject: 'OTP Verification',
             text: `Your OTP is ${otp}`
         };
-
-        // Store OTP in Redis with a 5-minute expiration
-        redisClient.on('connect' , async () => {
-            await redisClient.setEx(email, 900, otp.toString());
+        const salt = await bcrypt.genSalt(10);
+        const hashedOtp = await bcrypt.hash(otp.toString(), salt);
+        await prisma.user.update({
+            where: {
+                email: email
+            },
+            data: {
+                otp: hashedOtp
+            }
         })
-    
+
+
         await transporter.sendMail(mailOptions);
         console.log(`OTP sent to ${email}`);
     } catch (error) {
         console.error('Error generating or sending OTP:', error);
     }
 };
-
 export const validateEmailOtp = async (email: string, mailedOtp: string) => {
-    console.log(email, mailedOtp);
+    console.log(`Email: ${email}, Provided OTP: ${mailedOtp}`);
     try {
-       redisClient.on('connect' , async () => {
-            const storedOtp = await redisClient.get(email);
-            console.log("from redis" +storedOtp , mailedOtp);
-            
-            if (storedOtp === null) {
-                return false;
-            }
-            return parseInt(storedOtp) === parseInt(mailedOtp);
-        })
+        const user = await prisma.user.findFirst({
+            where: { email }
+        });
+
+        if (!user?.otp) {
+            console.log('User not found or OTP is missing');
+            return false;
+        }
+
+        console.log(`Stored Hashed OTP: ${user.otp}`);
+        
+        const isOtpValid = await bcrypt.compare(mailedOtp, user.otp);
+        console.log(`OTP Validation Result: ${isOtpValid}`);
+        
+        if (isOtpValid) {
+            await prisma.user.update({
+                where: { email },
+                data: { isVerified: true }
+            });
+            return true;
+        } else {
+            console.log('OTP does not match');
+            return false;
+        }
     } catch (error) {
         console.error('Error validating OTP:', error);
         return false;

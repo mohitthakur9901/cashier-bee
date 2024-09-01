@@ -6,6 +6,9 @@ import Signup from "./pages/Signup";
 import Error from "./pages/Error";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Layout from "./components/Layout";
+import Verification from "./pages/Verification";
+import Dashboard from "./components/dashboard/layout";
 
 
 
@@ -13,9 +16,13 @@ const router = createBrowserRouter([
 
     {
         path: "/",
-        element: <App />,
+        element: <Layout/>,
         errorElement: <Error />,
         children: [
+            {
+                path: '/',
+                element: <App/>
+            },
             {
                 path: '/about',
                 element : <About/>
@@ -25,6 +32,10 @@ const router = createBrowserRouter([
                 path: '/contact',
                 element: <Contact/>
 
+            },
+            {
+                path: "/dashboard",
+                element : <Dashboard/>
             }
         ]
     },
@@ -39,6 +50,14 @@ const router = createBrowserRouter([
         element: <SignIn />,
         errorElement: <Error />
     },
+    {
+        path: "/verify-user",
+        element: <Verification />,
+    },
+    {
+        path: "*",
+        element: <Error />
+    }
 ]);
 
 

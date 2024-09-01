@@ -4,7 +4,7 @@ import { app } from './app';
 
 config({
     path: './.env'
-});
+}); 
 
 app.listen(process.env.PORT, () => {
     

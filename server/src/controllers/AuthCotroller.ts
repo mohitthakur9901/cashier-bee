@@ -53,6 +53,9 @@ export const RegisterRestaurantAdmin = AsyncHandler(async (req, res) => {
                 profileImg: profileImgUrl.url || "",
                 createdBy: username,
                 modifiedBy: username,
+                otp: "",
+                isVerified: false,
+
                 UserRole: "RESTAURANTADMIN"
             }
         });
@@ -68,14 +71,15 @@ export const RegisterRestaurantAdmin = AsyncHandler(async (req, res) => {
 
 });
 
-
-
 export const VerifyRestaurantAdminOtp = AsyncHandler(async (req, res) => {
     const { email, otp } = req.body
+    console.log(email, otp);
+
     try {
-        if (!otp || !email) {
+        if (!email || !otp) {
             throw new ApiError(400, "Enter Valid Inputs");
         }
+
         const isVerified = await validateEmailOtp(email, otp)
         console.log("from controller : " + isVerified);
 
@@ -83,15 +87,21 @@ export const VerifyRestaurantAdminOtp = AsyncHandler(async (req, res) => {
         if (!isVerified) {
             throw new ApiError(400, "Invalid Otp");
         }
-        await prisma.user.update({
+        const user = await prisma.user.findUnique({
             where: {
                 email: email
-            },
-            data: {
-                isVerified: true
             }
         })
-        return res.status(200).json(new ApiResponse(200, "Otp Verified"));
+        if (!user) {
+            throw new ApiError(400, "Invalid Credentials");
+        }
+        const { password, ...userDetails } = user;
+        const token = generateJwtToken(user?.id.toString());
+
+        return res.status(200)
+        .cookie('Authorization', token, 
+            { httpOnly: true, secure: true }
+        ).json(new ApiResponse(200, userDetails, "User Verification SuccessFul"))
     } catch (error) {
         console.error('Error verifying otp:', error);
         return res.status(500).json(new ApiResponse(500, "Internal server error"));
@@ -125,10 +135,10 @@ export const LoginRestaurantAdmin = AsyncHandler(async (req, res) => {
         const { password: pass, ...userDetail } = user
 
         res
-        .cookie('Authorization', token, 
-            { httpOnly: true, secure: true, sameSite: 'none' }
-        )
-        .json(new ApiResponse(200, userDetail, "Login successful"))
+            .cookie('Authorization', token,
+                { httpOnly: true, secure: true }
+            )
+            .json(new ApiResponse(200, userDetail, "Login successful"))
 
 
     } catch (error) {

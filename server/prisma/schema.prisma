@@ -21,6 +21,7 @@ model User {
   phone       String
   username    String    @unique
   password    String
+  otp         String?
   isVerified  Boolean  @default(false)
   createdAt   DateTime  @default(now())
   createdBy   String
