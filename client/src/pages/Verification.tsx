@@ -3,35 +3,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserOtp } from "@/Types/User";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { UserOtpVerify } from "@/lib/validation";
 import { toast } from "sonner";
-
+import { useDispatch } from "react-redux";
+import { AppDispatch } from '../store/index'
+import { setUser } from "@/store/userSlice";
+import { InputOTP  , InputOTPGroup ,InputOTPSeparator, InputOTPSlot} from "@/components/ui/input-otp";
+import { setToken } from "@/store/Token";
 const Verification = () => {
     const [data, setData] = useState<UserOtp>({
         email: "",
         otp: ""
     });
     console.log(data);
-    
-    const [loading , setLoading] = useState<boolean>(false);
+    const dispatch: AppDispatch = useDispatch();
+
+
+
+    const [loading, setLoading] = useState<boolean>(false);
     const navigate = useNavigate();
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setData({ ...data, [e.target.name]: e.target.value });
     };
+
+    const handleOtpChange = (newValue: string) => {
+        setData({ ...data, otp: newValue });
+    };
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setLoading(true);
-            const isValid =  UserOtpVerify.safeParse(data)
+            const isValid = UserOtpVerify.safeParse(data)
             if (!isValid.success) {
                 toast.error("Invalid OTP")
                 return;
             }
             console.log(isValid);
-            
+
             const verifyOtp = await fetch("/api/v1/auth/verify-otp", {
                 method: "POST",
                 headers: {
@@ -39,20 +51,27 @@ const Verification = () => {
                 },
                 body: JSON.stringify(data)
             });
-            console.log(verifyOtp);
+            const response = await verifyOtp.json();
             
-            if (verifyOtp.status === 200) {
-                toast.success("OTP Verified Successfully");
-                setLoading(false)
-                navigate('/dashboard');
+            if (verifyOtp.status == 200) {
+                setLoading(false);
+                dispatch(setUser(response.data.userDetails));
+                dispatch(setToken(response.data.token));
+                toast.success("OTP verified successfully");
+                navigate("/auth/dashboard")
             }
             toast.error("Failed to verify OTP")
             setLoading(false)
         } catch (error) {
             console.error(error);
             toast.error("Failed to verify OTP");
-            
+
         }
+    };
+
+
+    const resendOtp = async () => {
+        toast.success("OTP resent successfully");
     };
 
     return (
@@ -68,36 +87,40 @@ const Verification = () => {
                             type="email"
                             placeholder="Enter your email"
                             value={data.email}
-                            onChange={onChange}
+                            onChange={handleChange}
                             required
                             className="border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
-                    <div className="flex flex-col space-y-1.5 mb-6">
+                    <div className="flex flex-col items-center justify-center space-y-1.5 mb-6">
                         <Label htmlFor="otp">OTP</Label>
-                        <Input
-                            id="otp"
-                            name="otp"
-                            type="text"
-                            placeholder="Enter the OTP"
-                            value={data.otp}
-                            onChange={onChange}
-                            required
-                            className="border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                        />
+                        <InputOTP maxLength={6} onChange={handleOtpChange} value={data.otp} name="otp" required id="otp"> 
+                            <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                            </InputOTPGroup>
+                            <InputOTPSeparator />
+                            <InputOTPGroup>
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                        </InputOTP>
                     </div>
                     <Button
                         type="submit"
                         disabled={loading}
                         className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded"
                     >
-                        {loading ? "Verifying Otp" : "Verify Otp"}
+                        {loading ? "Verifying" : "Verify"}
                     </Button>
                 </form>
                 <div className="mt-4 text-center">
-                    <Link to="/resend-otp" className="text-blue-500 hover:text-blue-600">
+                    {/* post request for generating otp for restaurant admin */}
+                    <Button onClick={resendOtp} className="text-blue-500 hover:text-blue-600">
                         Didn't receive an OTP? Resend
-                    </Link>
+                    </Button>
                 </div>
             </div>
         </div>

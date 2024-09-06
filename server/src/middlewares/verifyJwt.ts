@@ -5,16 +5,13 @@ import ApiError from '../utils/ApiError';
 
 
 const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.cookie?.split('=')[1];
-    console.log(token);
-    
+    const token = req.headers.authorization;
 
    try {
      if (!token) {
          throw new ApiError(401, "Unauthorized: Token missing");
      }
-    //  console.log(token);
- 
+   
      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
      if (!decoded) {
          throw new ApiError(401, "Unauthorized");

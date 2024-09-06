@@ -1,15 +1,14 @@
 import AsyncHandler from "../utils/AsyncHandler";
 import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
-import { PrismaClient } from '@prisma/client'
 import { generateAndSendEmailOtp, validateEmailOtp } from "../config/verification";
 import { RegisterUser, LoginUser } from "../lib/AuthValidation";
 import { uploadOnCloudinary } from "../utils/cloudnary";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { prisma } from "../config/db";
 
 
-const prisma = new PrismaClient()
 
 const generateJwtToken = (id: string) => {
     return jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '10d' });
@@ -21,8 +20,7 @@ export const RegisterRestaurantAdmin = AsyncHandler(async (req, res) => {
     const profileImg = req.file?.path;
 
     try {
-
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.user.findFirst({
             where: {
                 email: email
             }
@@ -55,7 +53,6 @@ export const RegisterRestaurantAdmin = AsyncHandler(async (req, res) => {
                 modifiedBy: username,
                 otp: "",
                 isVerified: false,
-
                 UserRole: "RESTAURANTADMIN"
             }
         });
@@ -99,17 +96,13 @@ export const VerifyRestaurantAdminOtp = AsyncHandler(async (req, res) => {
         const token = generateJwtToken(user?.id.toString());
 
         return res.status(200)
-        .cookie('Authorization', token, 
-            { httpOnly: true, secure: true }
-        ).json(new ApiResponse(200, userDetails, "User Verification SuccessFul"))
+        .json(new ApiResponse(200,{ userDetails ,token}, "User Verification SuccessFul"))
     } catch (error) {
         console.error('Error verifying otp:', error);
         return res.status(500).json(new ApiResponse(500, "Internal server error"));
 
     }
 });
-
-
 
 export const LoginRestaurantAdmin = AsyncHandler(async (req, res) => {
     const { email, password } = LoginUser.parse(req.body);
@@ -119,7 +112,8 @@ export const LoginRestaurantAdmin = AsyncHandler(async (req, res) => {
         }
         const user = await prisma.user.findUnique({
             where: {
-                email: email
+                email: email,
+                isDeleted: false
             }
         })
         if (!user) {
@@ -134,11 +128,7 @@ export const LoginRestaurantAdmin = AsyncHandler(async (req, res) => {
         // remove password from user object before sending to user
         const { password: pass, ...userDetail } = user
 
-        res
-            .cookie('Authorization', token,
-                { httpOnly: true, secure: true }
-            )
-            .json(new ApiResponse(200, userDetail, "Login successful"))
+        res.json(new ApiResponse(200, {userDetail ,token} , "Login successful"))
 
 
     } catch (error) {
@@ -147,13 +137,54 @@ export const LoginRestaurantAdmin = AsyncHandler(async (req, res) => {
 
     }
 });
-
-
+ 
 
 export const OAuthLogin = AsyncHandler(async (req, res) => {
     const password = Math.floor(100000 + Math.random() * 900000);
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password.toString(), salt);
+
+})
+
+export const UpdateRetaurantAdmin = AsyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const data = req.body;  // check data coming for update
+    try {
+        const user = await prisma.user.update({
+            where: {
+                id: Number(id)
+            },
+            data: data  // change updating system 
+        })
+
+    } catch (error) {
+        console.error('Error updating user:', error);
+        return res.status(500).json(new ApiResponse(500, "Internal server error"));
+
+    }
+})
+
+export const DeleteRetaurantAdmin = AsyncHandler(async (req, res) => {
+    const { id } = req.params;
+    try {
+        const user = await prisma.user.update({
+            where: {
+                id: Number(id)
+            },
+            data :{
+                isDeleted : true
+            }
+        })
+
+        return res.status(200)
+        .clearCookie('Authorization')
+        .json(new ApiResponse(200, user, "User deleted successfully"));
+        
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        return res.status(500).json(new ApiResponse(500, "Internal server error"));
+        
+    }
 
 })
 

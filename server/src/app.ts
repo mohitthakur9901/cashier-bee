@@ -23,13 +23,14 @@ Routes
 */
 
 import authRoute from './routes/AuthRoute'
-
+import restaurantRoute from './routes/RestaurantRoute'
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
 app.use('/api/v1/auth', authRoute);
+app.use('/api/v1/restaurant' , restaurantRoute)
 
 
 export {app}

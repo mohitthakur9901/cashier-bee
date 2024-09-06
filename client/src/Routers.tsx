@@ -8,7 +8,13 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Layout from "./components/Layout";
 import Verification from "./pages/Verification";
-import Dashboard from "./components/dashboard/layout";
+import DefaultLayout from "./components/layout";
+import Profile from "./pages/Profile";
+import Account from "./pages/Account";
+import Restaurant from "./pages/Restaurant";
+import Orders from "./pages/Orders";
+import Menu from "./pages/Menu";
+import Analytics from "./pages/Analytics";
 
 
 
@@ -32,11 +38,43 @@ const router = createBrowserRouter([
                 path: '/contact',
                 element: <Contact/>
 
+            }
+        ]
+    },
+    {
+        path: "/auth/dashboard",
+        element: <DefaultLayout />,
+        errorElement: <Error />,
+        children:[
+            {
+                path: "settings",
+                element: <h1 className="bg-blue-600">hello</h1>
             },
             {
-                path: "/dashboard",
-                element : <Dashboard/>
+                path : "profile",
+                element : <Profile/>
+            },
+            {
+                path: "account",
+                element : <Account/>
+            },
+            {
+                path: "restaurant",
+                element: <Restaurant/>
+            },
+            {
+                path : "orders",
+                element : <Orders/>
+            },
+            {
+                path: "menu",
+                element : <Menu/>
+            },
+            {
+                path: "analytics",
+                element: <Analytics/>
             }
+
         ]
     },
     {
@@ -53,10 +91,6 @@ const router = createBrowserRouter([
     {
         path: "/verify-user",
         element: <Verification />,
-    },
-    {
-        path: "*",
-        element: <Error />
     }
 ]);
 

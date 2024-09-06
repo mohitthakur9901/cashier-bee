@@ -47,6 +47,8 @@ export const generateAndSendEmailOtp = async (email: string) => {
         console.error('Error generating or sending OTP:', error);
     }
 };
+
+
 export const validateEmailOtp = async (email: string, mailedOtp: string) => {
     console.log(`Email: ${email}, Provided OTP: ${mailedOtp}`);
     try {
